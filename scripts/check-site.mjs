@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { validNativeAsset } from '../asset-policy.mjs';
+import { maximumAssetBytes, validNativeAsset } from '../asset-policy.mjs';
 
 const base = process.env.SITE_URL;
 if (!base) throw new Error('Set SITE_URL to the site to verify.');
@@ -17,14 +17,15 @@ for (const name of ['stone.png', 'charging-bed-double-orange.glb']) {
   assert.equal(response.status, 200, `${name} loads`);
   const reader = response.body.getReader();
   const prefix = new Uint8Array(16);
-  let length = 0;
-  while (length < prefix.length) {
+  let length = 0, received = 0;
+  while (true) {
     const chunk = await reader.read();
     if (chunk.done) break;
+    received += chunk.value.length;
+    assert(received <= maximumAssetBytes, `${name} respects the artwork size limit`);
     const count = Math.min(prefix.length - length, chunk.value.length);
     prefix.set(chunk.value.subarray(0, count), length); length += count;
   }
-  await reader.cancel();
   assert(validNativeAsset(path, prefix.subarray(0, length)), `${name} has the correct binary format`);
 }
 assert.equal((await get('/native-assets/unknown')).status, 404, 'Unknown artwork routes stay closed');
