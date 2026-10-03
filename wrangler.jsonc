@@ -16,6 +16,7 @@
   "env": {
     "production": {
       "name": "walk-midnight-city",
+      "routes": [{ "pattern": "walk-midnight.isotopy.xyz", "custom_domain": true }],
       "assets": {
         "directory": "./dist", "binding": "ASSETS", "not_found_handling": "none",
         "run_worker_first": ["/native-assets/*", "/city-assets/*"]

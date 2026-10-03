@@ -31,7 +31,7 @@ Later runs use `.cache/native/`; generated code remains ignored by Git.
 
 ## Cloudflare deployment
 
-Live site: https://walk-midnight-city.seungheon-ooh.workers.dev
+Live site: https://walk-midnight.isotopy.xyz
 
 Pushes to `master` automatically deploy through the **Deploy to Cloudflare**
 GitHub Actions workflow. It installs the locked dependencies, verifies the pinned
@@ -58,7 +58,8 @@ npm run cf:dev
 ```
 
 Wrangler serves the app at http://127.0.0.1:8787. `wrangler.jsonc` defines separate
-production and staging names; no custom domain or DNS changes are required.
+production and staging names. Production owns the `walk-midnight.isotopy.xyz`
+custom domain; Cloudflare provisions its DNS record and HTTPS certificate.
 Cloudflare serves static files directly and runs `worker/index.ts` only for the
 read-only artwork adapter or missing routes. It validates artwork paths and file
 signatures, bounds streaming responses, rejects redirects, strips caller

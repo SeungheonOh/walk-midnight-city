@@ -40,4 +40,4 @@ jobs:
       - name: Verify deployed site and artwork
         run: node scripts/check-site.mjs
         env:
-          SITE_URL: https://walk-midnight-city.seungheon-ooh.workers.dev
+          SITE_URL: https://walk-midnight.isotopy.xyz
