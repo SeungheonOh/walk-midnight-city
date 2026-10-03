@@ -1,0 +1,39 @@
+{
+  "name": "walk-midnight",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync-native": "node scripts/sync-native.mjs",
+    "predev": "npm run sync-native",
+    "prebuild": "npm run sync-native",
+    "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "build": "tsc --noEmit && vite build",
+    "postbuild": "node scripts/compress-assets.mjs",
+    "start": "node server.mjs",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.51.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "tailwind-merge": "^3.7.0",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.186.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "acorn": "^8.18.0",
+    "eslint-scope": "^9.1.2",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.2",
+    "wrangler": "^4.147.0"
+  }
+}

@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+:root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color-scheme: dark; }
+body { margin: 0; }
+button, a, select { -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; }
+button:disabled { cursor: wait; opacity: 0.5; }
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px solid var(--color-lime-300); outline-offset: 4px; }
+select option { background: var(--color-slate-900); }
+canvas { display: block; }
+kbd { border: 1px solid var(--color-slate-600); border-radius: var(--radius-sm); padding: 2px 6px; font-size: 12px; }
+@layer components {
+  .panel { @apply rounded-xl border border-slate-700/70 bg-slate-950/95 shadow-lg; }
+  .icon-button { @apply flex size-11 items-center justify-center rounded-xl border border-slate-700/70 bg-slate-950/95 text-slate-300 shadow-sm hover:bg-slate-800; }
+  .primary-button { @apply flex items-center justify-center gap-2 rounded-lg bg-lime-300 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-lime-200; }
+  .secondary-button { @apply flex items-center justify-center gap-2 rounded-lg border border-slate-700 px-3 py-2.5 text-xs text-slate-200 hover:bg-slate-800; }
+}
+header { padding-top: max(1rem, env(safe-area-inset-top)); }
+footer { padding-bottom: env(safe-area-inset-bottom); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }

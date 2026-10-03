@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.cache/
+artifacts/
+.DS_Store
+src/native/generated/
