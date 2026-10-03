@@ -8,10 +8,13 @@
     "predev": "npm run sync-native",
     "prebuild": "npm run sync-native",
     "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
-    "build": "tsc --noEmit && vite build",
+    "build": "npm run check && vite build",
     "postbuild": "node scripts/compress-assets.mjs",
     "start": "node server.mjs",
-    "check": "tsc --noEmit"
+    "check": "npm run cf:types && tsc --noEmit && tsc --project tsconfig.worker.json",
+    "cf:types": "wrangler types --env production",
+    "cf:dev": "wrangler dev --env staging",
+    "deploy": "npm run build && wrangler deploy --env production"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

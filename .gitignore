@@ -7,3 +7,8 @@ dist/
 artifacts/
 .DS_Store
 src/native/generated/
+.wrangler/
+.dev.vars
+.dev.vars.*
+worker-configuration.d.ts
+*.cpuprofile

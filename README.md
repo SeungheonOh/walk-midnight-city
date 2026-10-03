@@ -29,6 +29,43 @@ The first development/build run downloads nine pinned public rendering modules.
 Their SHA-256 hashes are checked before extracting rendering-only dependencies.
 Later runs use `.cache/native/`; generated code remains ignored by Git.
 
+## Cloudflare deployment
+
+Live site: https://walk-midnight-city.seungheon-ooh.workers.dev
+
+Pushes to `master` automatically deploy through the **Deploy to Cloudflare**
+GitHub Actions workflow. It installs the locked dependencies, verifies the pinned
+native rendering sources, builds/type-checks the client and Worker, deploys with
+Wrangler, and checks the published page plus PNG/GLB artwork. The workflow can
+also be started manually from GitHub Actions on `master`.
+
+Repository Actions secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+They are deployment credentials only: never include them in the client, Worker
+bindings, committed files, or logs. To rotate the token, update the repository's
+`CLOUDFLARE_API_TOKEN` secret in GitHub Settings → Secrets and variables → Actions.
+
+For a manual deployment, provide those variables securely in your shell and run:
+
+```sh
+npm run deploy
+```
+
+Local Cloudflare-runtime preview, without deploying staging:
+
+```sh
+npm run build
+npm run cf:dev
+```
+
+Wrangler serves the app at http://127.0.0.1:8787. `wrangler.jsonc` defines separate
+production and staging names; no custom domain or DNS changes are required.
+Cloudflare serves static files directly and runs `worker/index.ts` only for the
+read-only artwork adapter or missing routes. It validates artwork paths and file
+signatures, bounds streaming responses, rejects redirects, strips caller
+credentials by making fresh upstream requests, and caches public artwork at the
+edge. Static assets use Cloudflare's compression; local Node previews keep their
+precompressed alternatives. No Midnight City credentials are required.
+
 ## Controls
 
 - Click **Walk into the city** to capture the mouse.
@@ -63,9 +100,9 @@ text, never injected HTML. Snapshot data is not committed to this repository.
   Upstream asset removal or incompatible map changes can require an update.
 - Desktop-first mouse/keyboard controls; no mobile walking controls yet.
 - Public source/model access is not a license. Redistribution/public hosting
-  permission has not been established. Assets are fetched on demand for local
-  development; original source and models are not committed. Obtain permission
-  before publishing the native-derived renderer or assets.
+  permission has not been established. Assets are fetched on demand through a
+  read-only adapter; original downloaded source and models are not committed.
+  Deployment does not establish redistribution rights for third-party material.
 - Public spectator endpoints are observed contracts and can change upstream.
 
 See [integration findings](docs/integration.md) for verified routes and sources.

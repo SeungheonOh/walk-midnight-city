@@ -1,0 +1,32 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "walk-midnight-city",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "none",
+    "run_worker_first": ["/native-assets/*", "/city-assets/*"]
+  },
+  "observability": { "enabled": true, "head_sampling_rate": 0.1 },
+  "env": {
+    "production": {
+      "name": "walk-midnight-city",
+      "assets": {
+        "directory": "./dist", "binding": "ASSETS", "not_found_handling": "none",
+        "run_worker_first": ["/native-assets/*", "/city-assets/*"]
+      }
+    },
+    "staging": {
+      "name": "walk-midnight-city-staging",
+      "assets": {
+        "directory": "./dist", "binding": "ASSETS", "not_found_handling": "none",
+        "run_worker_first": ["/native-assets/*", "/city-assets/*"]
+      }
+    }
+  }
+}
