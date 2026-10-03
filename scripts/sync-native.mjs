@@ -30,6 +30,7 @@ function adapt(source, name) {
   }
   if (name !== sourceName) return source;
   source = replaceOnce(source, 'function Dr(e,t,n,i,a){', 'function Dr(e,t,n,i,a,visitor){let visitorLoad=0;');
+  source = replaceOnce(source, 'et.loadAsync(`/models/city-neon/${e}.glb`)', 'visitor.load(()=>et.loadAsync(`/models/city-neon/${e}.glb`))');
   source = replaceOnce(source, 'o.setPixelRatio(1),', 'o.info.autoReset=!1,o.setPixelRatio(1),');
   source = replaceOnce(source, 'g.enableDamping=!0,', 'g.enabled=!1,g.enableDamping=!1,');
   source = replaceOnce(source, 'h.fov=je.radToDeg(2*Math.atan(m/f)),', 'h.fov=72,h.near=.06,');

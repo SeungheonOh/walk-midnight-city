@@ -6,6 +6,7 @@ import { WalkingSurface } from './walking-surface';
 import { WalkingCache } from './walking-cache';
 import { prepareFirstPersonMaterials } from './first-person-materials';
 import type { FocusTarget, SceneCallbacks } from './scene';
+import { AssetQueue } from './asset-queue';
 
 interface NativeLayout {
   heightAt: (horizontal: number, depth: number) => number;
@@ -43,6 +44,7 @@ export class CityScene {
   private metricsAt = 0;
   private disposed = false;
   private loading = true;
+  private assetQueue = new AssetQueue(4);
   private diagnostics = new URLSearchParams(location.search).has('diagnostics');
 
   constructor(container: HTMLElement, private callbacks: SceneCallbacks) {
@@ -53,6 +55,7 @@ export class CityScene {
       callbacks.assets(Number(status.loading), Number(!!status.error));
       if (status.error) callbacks.error(status.error);
     }, () => {}, () => {}, {
+      load: <Result>(operation: () => Promise<Result>) => this.assetQueue.run(operation),
       ready: async (camera: PerspectiveCamera, layout: NativeLayout, controls: NativeControls, key: string | null) => {
         this.preparation?.abort();
         const preparation = new AbortController();

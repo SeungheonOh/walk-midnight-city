@@ -11,7 +11,7 @@ assert(html.includes('Walk Midnight'), 'Expected application is deployed');
 const script = html.match(/src="([^"]+\.js)"/)?.[1];
 assert(script, 'Built application entry exists');
 assert.equal((await get(script, { method: 'HEAD' })).status, 200, 'Built JavaScript loads');
-for (const name of ['stone.png', 'charging-bed-double-orange.glb']) {
+for (const name of ['stone.png', 'city-hall.glb', 'charging-bed-double-orange.glb']) {
   const path = `/models/city-neon/${name}`;
   const response = await get(`/native-assets${path}`);
   assert.equal(response.status, 200, `${name} loads`);
@@ -27,6 +27,7 @@ for (const name of ['stone.png', 'charging-bed-double-orange.glb']) {
     prefix.set(chunk.value.subarray(0, count), length); length += count;
   }
   assert(validNativeAsset(path, prefix.subarray(0, length)), `${name} has the correct binary format`);
+  if (name.endsWith('.glb')) assert.equal(received, new DataView(prefix.buffer).getUint32(8, true), `${name} is complete`);
 }
 assert.equal((await get('/native-assets/unknown')).status, 404, 'Unknown artwork routes stay closed');
 assert.equal((await get('/native-assets/models/city-neon/stone.png?extra=1')).status, 404, 'Artwork query strings are not forwarded');
