@@ -1,7 +1,7 @@
 import type { BufferAttribute, Mesh, Object3D } from 'three';
 import type { Position } from './world';
 
-type Point = { x: number; y: number; z: number };
+type Point = { x: number; y: number; z: number; relativeHeight?: number };
 type Polygon = Point[];
 const radius = 0.17;
 const stepHeight = 0.38;
@@ -56,14 +56,30 @@ export class WalkingSurface {
   }
 
   private *rasterize(triangle: Polygon, water: boolean): Generator<void> {
-    let polygon = triangle.map(point => ({ ...point, y: point.y - this.heightAt(point.x, point.z) }));
-    if (water) polygon = clip(polygon, -0.15, true);
-    else polygon = clip(clip(polygon, stepHeight, true), bodyHeight, false);
+    let lowest = Infinity, highest = -Infinity;
+    let polygon = triangle.map(point => {
+      const height = point.relativeHeight ?? point.y - this.heightAt(point.x, point.z);
+      lowest = Math.min(lowest, height); highest = Math.max(highest, height);
+      return { x: point.x, y: height, z: point.z };
+    });
+    if (water) {
+      if (highest < -0.15) return;
+      if (lowest < -0.15) polygon = clip(polygon, -0.15, true);
+    } else {
+      if (highest < stepHeight || lowest > bodyHeight) return;
+      if (lowest < stepHeight) polygon = clip(polygon, stepHeight, true);
+      if (highest > bodyHeight) polygon = clip(polygon, bodyHeight, false);
+    }
     if (polygon.length < 2) return;
-    const minX = Math.max(0, Math.floor(Math.min(...polygon.map(point => point.x)) / resolution));
-    const maxX = Math.min(this.stride - 1, Math.floor(Math.max(...polygon.map(point => point.x)) / resolution));
-    const minZ = Math.max(0, Math.floor(Math.min(...polygon.map(point => point.z)) / resolution));
-    const maxZ = Math.min(Math.ceil(this.depth / resolution), Math.floor(Math.max(...polygon.map(point => point.z)) / resolution));
+    let left = Infinity, right = -Infinity, front = Infinity, back = -Infinity;
+    for (const point of polygon) {
+      left = Math.min(left, point.x); right = Math.max(right, point.x);
+      front = Math.min(front, point.z); back = Math.max(back, point.z);
+    }
+    const minX = Math.max(0, Math.floor(left / resolution));
+    const maxX = Math.min(this.stride - 1, Math.floor(right / resolution));
+    const minZ = Math.max(0, Math.floor(front / resolution));
+    const maxZ = Math.min(Math.ceil(this.depth / resolution), Math.floor(back / resolution));
     let scanned = 0;
     for (let row = minZ; row <= maxZ; row++) for (let column = minX; column <= maxX; column++) {
       const key = row * this.stride + column;
@@ -133,9 +149,14 @@ export class WalkingSurface {
           lowest = Math.min(lowest, relative); highest = Math.max(highest, relative);
         }
         if (!water && (highest < stepHeight || lowest > bodyHeight)) continue;
+        const vertices: (Point | undefined)[] = new Array(positions.count);
         const vertex = (index: number) => {
           const offset = indices ? indices.getX(index) : index;
-          return worldPoint({ x: positions.getX(offset), y: positions.getY(offset), z: positions.getZ(offset) });
+          if (vertices[offset]) return vertices[offset]!;
+          const point = worldPoint({ x: positions.getX(offset), y: positions.getY(offset), z: positions.getZ(offset) });
+          point.relativeHeight = point.y - this.heightAt(point.x, point.z);
+          vertices[offset] = point;
+          return point;
         };
         const count = indices ? indices.count : positions.count;
         for (let index = 0; index + 2 < count; index += 3) {
