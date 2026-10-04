@@ -47,7 +47,7 @@ function adapt(source, name) {
   source = replaceOnce(source, 'z=i,ot(),n({loading:!0,error:null});try{', 'z=i,ot(),n({loading:!0,error:null});const visitorRequest=++visitorLoad;let visitorPending=!0;try{');
   source = replaceOnce(source, 'if(H||i!==z||!ie)return;', 'if(H||i!==z||visitorRequest!==visitorLoad||!ie)return;');
   source = replaceOnce(source, '!H&&i===z&&n({loading:!0,error:null,detail:', '!H&&i===z&&visitorRequest===visitorLoad&&visitorPending&&n({loading:!0,error:null,detail:');
-  source = replaceOnce(source, 'st(),at(),n({loading:!1,error:de})', 'st(),await visitor.ready(h,A,g,de?null:i);if(H||i!==z||visitorRequest!==visitorLoad)return;x.invalidate(),n({loading:!1,error:de})');
+  source = replaceOnce(source, 'st(),at(),n({loading:!1,error:de})', 'st(),await visitor.ready(h,A,g,de?null:i,o,[c,l]);if(H||i!==z||visitorRequest!==visitorLoad)return;x.invalidate(),n({loading:!1,error:de})');
   source = replaceOnce(source, '!H&&i===z&&n({loading:!1,error:e instanceof Error?e.message:String(e)})', 'visitorPending=!1,!H&&i===z&&visitorRequest===visitorLoad&&n({loading:!1,error:e instanceof Error?e.message:String(e)})');
   source = replaceOnce(source, 'setWorld:ct,select(e,t)', 'setWorld:ct,retry(){if(I){z=null;return ct(I.world,I.space)}},select(e,t)');
   const ast = parse(source, { ecmaVersion: 'latest', sourceType: 'module' });
@@ -55,6 +55,8 @@ function adapt(source, name) {
   const inspector = renderer.body.body.find(node => node.type === 'FunctionDeclaration' && node.id.name === 'St');
   source = source.slice(0, inspector.start) + 'function St(){}' + source.slice(inspector.end);
   source = replaceOnce(source, 's=2.405/Math.hypot(f.x,f.z)', 's=2.405');
+  source = replaceOnce(source, 'b.render()}return Ot()', 'b.render(),visitor.rendered?.()}return Ot()');
+  source = replaceOnce(source, 'if(document.hidden||H||!A)return;', 'if(document.hidden||H||!A||!visitor.active())return;');
   return source;
 }
 

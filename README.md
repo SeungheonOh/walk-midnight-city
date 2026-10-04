@@ -128,6 +128,21 @@ See [integration findings](docs/integration.md) for verified routes and sources.
 
 Checked locally on 2026-10-04:
 
+- Performance pass preserves resolution, models, textures, shadows, reflections,
+  ambient occlusion, and bloom. Expensive opaque instance groups are partitioned
+  spatially, while cheap geometry and transparent ordering remain unchanged.
+- Collision preparation caches transformed vertices and avoids unnecessary
+  clipping/temporary arrays. Reference collision masks remain byte-identical.
+  Scene rendering waits for preparation instead of competing with it; shaders
+  compile asynchronously before walking begins.
+- In the fixed Central Chrome fixture, collision preparation measured about
+  170 ms after optimization (previous runs: 680–2,880 ms), with about 470 ms of
+  separate shader preparation. These exclude network/model loading and are not
+  whole-page loading times. Warmed 1280×720 turning stayed near the display's
+  120 FPS ceiling in both versions; no universal FPS gain is claimed.
+- A streamed 12 MiB model validation probe reduced intermediate buffer memory
+  from 36 MiB to 24 MiB. Fragmented headers, oversized/truncated bodies, retries,
+  and cancellation retain their checks. No artwork is reduced or recompressed.
 - All 357 static artwork files (246 GLBs, 110 PNGs, one HDR; 197 MiB) match
   their downloaded originals by byte count and SHA-256 through Wrangler.
 - Chrome renders Central and Charging House from the static snapshot.

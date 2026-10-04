@@ -7,6 +7,7 @@ import { WalkingCache } from './walking-cache';
 import { prepareFirstPersonMaterials } from './first-person-materials';
 import type { FocusTarget, SceneCallbacks } from './scene';
 import { AssetQueue } from './asset-queue';
+import { partitionStaticInstances } from './static-batches';
 
 interface NativeLayout {
   heightAt: (horizontal: number, depth: number) => number;
@@ -41,6 +42,8 @@ export class CityScene {
   private previous = 0;
   private hudAt = 0;
   private frames: number[] = [];
+  private renderStarted = 0;
+  private renderTimes: number[] = [];
   private metricsAt = 0;
   private disposed = false;
   private loading = true;
@@ -56,7 +59,7 @@ export class CityScene {
       callbacks.error(status.error ?? '');
     }, () => {}, () => {}, {
       load: <Result>(operation: () => Promise<Result>) => this.assetQueue.run(operation),
-      ready: async (camera: PerspectiveCamera, layout: NativeLayout, controls: NativeControls, key: string | null) => {
+      ready: async (camera: PerspectiveCamera, layout: NativeLayout, controls: NativeControls, key: string | null, renderer: WebGLRenderer, scenes: Object3D[]) => {
         this.preparation?.abort();
         const preparation = new AbortController();
         this.preparation = preparation;
@@ -68,13 +71,21 @@ export class CityScene {
         const surface = cached ?? await WalkingSurface.fromSceneAsync(layout.root, layout.width, layout.height, layout.heightAt, preparation.signal);
         if (preparation.signal.aborted || this.disposed) return;
         if (key && !cached) this.walkingCache.set(key, surface);
-        this.surface = surface;
+        const batches = partitionStaticInstances(layout.root);
         this.position = surface.nearest(this.position);
-        this.previous = 0; this.frames = [];
-        if (this.diagnostics) this.canvas.dataset.walking = JSON.stringify({ collision: 'visible-geometry', space: this.space?.id, polygons: surface.polygonCount, buildMs: performance.now() - started, maxSliceMs: cached ? 0 : surface.maxSliceMs, cached: !!cached });
+        this.previous = 0; this.frames = []; this.renderTimes = []; this.renderStarted = 0;
         this.placeCamera();
+        const preparedAt = performance.now();
+        for (const scene of scenes) {
+          await renderer.compileAsync(scene, camera);
+          if (preparation.signal.aborted || this.disposed) return;
+        }
+        this.surface = surface;
+        if (this.diagnostics) this.canvas.dataset.walking = JSON.stringify({ collision: 'visible-geometry', space: this.space?.id, polygons: surface.polygonCount, buildMs: preparedAt - started, shaderMs: performance.now() - preparedAt, maxSliceMs: cached ? 0 : surface.maxSliceMs, cached: !!cached, batches });
       },
       frame: this.frame,
+      active: () => !this.loading && !!this.surface,
+      rendered: () => { if (this.diagnostics && this.renderStarted) this.renderTimes.push(performance.now() - this.renderStarted); },
       time: (time: number) => this.playback.read(time),
     });
     this.canvas = container.querySelector('canvas')!;
@@ -160,6 +171,7 @@ export class CityScene {
 
   private frame = (time: number, camera: PerspectiveCamera, layout: NativeLayout, controls: NativeControls, residents: NativeResidents, renderer: WebGLRenderer) => {
     if (this.disposed || !this.world || !this.space || this.loading || !this.surface) return;
+    if (this.diagnostics) this.renderStarted = performance.now();
     this.camera = camera; this.layout = layout; this.controls = controls; this.residents = residents;
     const elapsed = this.previous ? Math.min(0.05, (time - this.previous) / 1000) : 0;
     const interval = this.previous ? time - this.previous : 0;
@@ -179,7 +191,7 @@ export class CityScene {
       if (time - this.metricsAt > 2000 && this.frames.length) {
         const sorted = [...this.frames].sort((left, right) => left - right);
         const metrics = { renderer: 'midnight-native', fps: Math.round(10000 / (this.frames.reduce((sum, value) => sum + value, 0) / this.frames.length)) / 10, p95: sorted[Math.floor(sorted.length * 0.95)], calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, residents: this.world.dynamicWorld.agents.filter(agent => agent.position.spaceId === this.space!.id).length, loading: this.loading, position: this.position, eyeHeight: camera.position.y, yaw: this.yaw, pitch: this.pitch };
-        this.canvas.dataset.performance = JSON.stringify(metrics); this.frames = []; this.metricsAt = time;
+        this.canvas.dataset.performance = JSON.stringify({ ...metrics, renderMs: this.renderTimes.reduce((sum, value) => sum + value, 0) / Math.max(1, this.renderTimes.length) }); this.frames = []; this.renderTimes = []; this.metricsAt = time;
       }
     }
   };
