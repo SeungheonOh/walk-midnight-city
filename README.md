@@ -143,6 +143,9 @@ Checked locally on 2026-10-04:
 - A streamed 12 MiB model validation probe reduced intermediate buffer memory
   from 36 MiB to 24 MiB. Fragmented headers, oversized/truncated bodies, retries,
   and cancellation retain their checks. No artwork is reduced or recompressed.
+- Model downloads/parsing use one or two slots on devices reporting limited
+  memory or processors, and four otherwise. Missing browser hardware hints keep
+  the existing four-slot behavior; these hints never change visual quality.
 - All 357 static artwork files (246 GLBs, 110 PNGs, one HDR; 197 MiB) match
   their downloaded originals by byte count and SHA-256 through Wrangler.
 - Chrome renders Central and Charging House from the static snapshot.

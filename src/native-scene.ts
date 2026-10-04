@@ -6,7 +6,7 @@ import { WalkingSurface } from './walking-surface';
 import { WalkingCache } from './walking-cache';
 import { prepareFirstPersonMaterials } from './first-person-materials';
 import type { FocusTarget, SceneCallbacks } from './scene';
-import { AssetQueue } from './asset-queue';
+import { AssetQueue, modelLoadConcurrency } from './asset-queue';
 import { partitionStaticInstances } from './static-batches';
 
 interface NativeLayout {
@@ -47,7 +47,7 @@ export class CityScene {
   private metricsAt = 0;
   private disposed = false;
   private loading = true;
-  private assetQueue = new AssetQueue(4);
+  private assetQueue = new AssetQueue(modelLoadConcurrency(navigator));
   private diagnostics = new URLSearchParams(location.search).has('diagnostics');
 
   constructor(container: HTMLElement, private callbacks: SceneCallbacks) {
