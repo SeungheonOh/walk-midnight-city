@@ -26,7 +26,10 @@ async function saveGenerated(name, content) {
 }
 
 function adapt(source, name) {
-  if (name === 'three.module-BGB2N4hT.js') return replaceOnce(source, 'fetch(a).then(t=>', 'modelResponse(a).then(t=>');
+  if (name === 'three.module-BGB2N4hT.js') {
+    source = replaceOnce(source, 'fetch(a).then(t=>', 'modelResponse(a).then(t=>');
+    return replaceOnce(source, 'L.get(e).currentProgram.isReady()&&r.delete(e)', '(!L.get(e).currentProgram||L.get(e).currentProgram.isReady())&&r.delete(e)');
+  }
   if (name === 'index-JDqEnY20.js') {
     const ast = parse(source, { ecmaVersion: 'latest', sourceType: 'module' });
     const origin = ast.body.find(node => node.type === 'FunctionDeclaration' && node.id.name === 'Jf');
