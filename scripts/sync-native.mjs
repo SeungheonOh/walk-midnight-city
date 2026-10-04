@@ -8,6 +8,9 @@ const output = new URL('../src/native/generated/', import.meta.url);
 const cache = new URL('../.cache/native/', import.meta.url);
 const modules = new Map();
 const lockedSources = JSON.parse(await readFile(new URL('native-sources.json', import.meta.url), 'utf8'));
+const artwork = JSON.parse(await readFile(new URL('../public/artwork-manifest.json', import.meta.url), 'utf8').catch(() => 'null'));
+const assetBase = artwork?.basePath ?? '/native-assets/unprepared';
+if (!/^\/native-assets\/([a-f0-9]{16}|unprepared)$/.test(assetBase)) throw new Error('Invalid artwork snapshot');
 await mkdir(output, { recursive: true });
 await mkdir(cache, { recursive: true });
 
@@ -23,6 +26,7 @@ async function saveGenerated(name, content) {
 }
 
 function adapt(source, name) {
+  if (name === 'three.module-BGB2N4hT.js') return replaceOnce(source, 'fetch(a).then(t=>', 'modelResponse(a).then(t=>');
   if (name === 'index-JDqEnY20.js') {
     const ast = parse(source, { ecmaVersion: 'latest', sourceType: 'module' });
     const origin = ast.body.find(node => node.type === 'FunctionDeclaration' && node.id.name === 'Jf');
@@ -40,11 +44,12 @@ function adapt(source, name) {
   source = replaceOnce(source, 'g.update(),re?.update(h)', 're?.update(h)');
   source = replaceOnce(source, 'window.addEventListener(`keydown`,ht),window.addEventListener(`keyup`,_t),', '');
   source = replaceOnce(source, 's.addEventListener(`pointerdown`,bt),s.addEventListener(`pointerup`,wt),', '');
-  source = replaceOnce(source, 'z=i,ot(),n({loading:!0,error:null});try{', 'z=i,ot(),n({loading:!0,error:null});const visitorRequest=++visitorLoad;try{');
+  source = replaceOnce(source, 'z=i,ot(),n({loading:!0,error:null});try{', 'z=i,ot(),n({loading:!0,error:null});const visitorRequest=++visitorLoad;let visitorPending=!0;try{');
   source = replaceOnce(source, 'if(H||i!==z||!ie)return;', 'if(H||i!==z||visitorRequest!==visitorLoad||!ie)return;');
-  source = replaceOnce(source, '!H&&i===z&&n({loading:!0,error:null,detail:', '!H&&i===z&&visitorRequest===visitorLoad&&n({loading:!0,error:null,detail:');
+  source = replaceOnce(source, '!H&&i===z&&n({loading:!0,error:null,detail:', '!H&&i===z&&visitorRequest===visitorLoad&&visitorPending&&n({loading:!0,error:null,detail:');
   source = replaceOnce(source, 'st(),at(),n({loading:!1,error:de})', 'st(),await visitor.ready(h,A,g,de?null:i);if(H||i!==z||visitorRequest!==visitorLoad)return;x.invalidate(),n({loading:!1,error:de})');
-  source = replaceOnce(source, '!H&&i===z&&n({loading:!1,error:e instanceof Error?e.message:String(e)})', '!H&&i===z&&visitorRequest===visitorLoad&&n({loading:!1,error:e instanceof Error?e.message:String(e)})');
+  source = replaceOnce(source, '!H&&i===z&&n({loading:!1,error:e instanceof Error?e.message:String(e)})', 'visitorPending=!1,!H&&i===z&&visitorRequest===visitorLoad&&n({loading:!1,error:e instanceof Error?e.message:String(e)})');
+  source = replaceOnce(source, 'setWorld:ct,select(e,t)', 'setWorld:ct,retry(){if(I){z=null;return ct(I.world,I.space)}},select(e,t)');
   const ast = parse(source, { ecmaVersion: 'latest', sourceType: 'module' });
   const renderer = ast.body.find(node => node.type === 'FunctionDeclaration' && node.id.name === 'Dr');
   const inspector = renderer.body.body.find(node => node.type === 'FunctionDeclaration' && node.id.name === 'St');
@@ -136,6 +141,7 @@ while (changed) {
 const manifest = [];
 for (const module of modules.values()) {
   const chunks = [];
+  if (module.name === 'three.module-BGB2N4hT.js') chunks.push("import { modelResponse } from '../../model-response';");
   for (const [name, { dependency, exported }] of module.imported) chunks.push(`import { ${exported} as ${name} } from './${dependency.name}';`);
   const nodes = [...module.selected].flatMap(name => {
     const declaration = module.declarations.get(name);
@@ -152,7 +158,7 @@ for (const module of modules.values()) {
   if (module.name === sourceName) exports.push('Dr as createNativeScene');
   chunks.push(`export { ${exports.join(', ')} };`);
   let result = chunks.join('\n');
-  result = result.replaceAll('/models/city-neon/', '/native-assets/models/city-neon/').replaceAll('`/characters`', '`/native-assets/characters`').replaceAll('/api/characters/', '/native-assets/api/characters/').replaceAll('/api/building-models/', '/native-assets/api/building-models/').replaceAll('/assets/workstations-v2-pVmukC4H.png', '/native-assets/assets/workstations-v2-pVmukC4H.png');
+  result = result.replaceAll('/models/city-neon/', `${assetBase}/models/city-neon/`).replaceAll('`/characters`', `\`${assetBase}/characters\``).replaceAll('/api/characters/', `${assetBase}/api/characters/`).replaceAll('/api/building-models/', `${assetBase}/api/building-models/`).replaceAll('/assets/workstations-v2-pVmukC4H.png', `${assetBase}/assets/workstations-v2-pVmukC4H.png`);
   await saveGenerated(module.name, result);
   manifest.push({ file: module.name, sha256: module.hash, bindings: [...module.selected].sort() });
 }

@@ -5,6 +5,12 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
+/native-assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/artwork-manifest.json
+  Cache-Control: no-cache
+
 /
   Cache-Control: no-cache
 

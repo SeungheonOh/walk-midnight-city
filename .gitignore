@@ -12,3 +12,5 @@ src/native/generated/
 .dev.vars.*
 worker-configuration.d.ts
 *.cpuprofile
+public/native-assets/
+public/artwork-manifest.json
