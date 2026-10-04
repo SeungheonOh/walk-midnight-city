@@ -28,6 +28,9 @@ Open http://127.0.0.1:4173. Both servers default to loopback-only access.
 The first development/build run downloads nine pinned public rendering modules.
 Their SHA-256 hashes are checked before extracting rendering-only dependencies.
 Later runs use `.cache/native/`; generated code remains ignored by Git.
+The first run also downloads the full artwork snapshot. Local development reuses
+it; `npm run build` refreshes it for deployment. `npm run sync-artwork` explicitly
+refreshes the downloaded snapshot without deploying.
 
 ## Cloudflare deployment
 
@@ -35,8 +38,9 @@ Live site: https://walk-midnight.isotopy.xyz
 
 Pushes to `master` automatically deploy through the **Deploy to Cloudflare**
 GitHub Actions workflow. It installs the locked dependencies, verifies the pinned
-native rendering sources, builds/type-checks the client and Worker, deploys with
-Wrangler, and checks the published page plus PNG/GLB artwork. The workflow can
+native rendering sources, refreshes/downloads the artwork, builds/type-checks
+the client, deploys with Wrangler, and verifies every hosted artwork file against
+its expected size and SHA-256 hash. The workflow can
 also be started manually from GitHub Actions on `master`.
 
 Repository Actions secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
@@ -60,12 +64,24 @@ npm run cf:dev
 Wrangler serves the app at http://127.0.0.1:8787. `wrangler.jsonc` defines separate
 production and staging names. Production owns the `walk-midnight.isotopy.xyz`
 custom domain; Cloudflare provisions its DNS record and HTTPS certificate.
-Cloudflare serves static files directly and runs `worker/index.ts` only for the
-read-only artwork adapter or missing routes. It validates artwork paths and file
-signatures, bounds streaming responses, rejects redirects, strips caller
-credentials by making fresh upstream requests, and caches public artwork at the
-edge. Static assets use Cloudflare's compression; local Node previews keep their
-precompressed alternatives. No Midnight City credentials are required.
+Cloudflare serves the entire deployment as static files, with no Worker script,
+artwork proxy, or runtime upstream fallback. The downloaded models, textures,
+sprite parts, custom sheets referenced by the snapshot, and HDR live in ignored
+`public/native-assets/`. Their content-addressed snapshot URL changes when any
+file changes, preventing stale or damaged earlier cache entries from being reused.
+`public/artwork-manifest.json` records paths, byte counts, and SHA-256 hashes.
+Downloads are bounded, checked for complete GLB/PNG data, and fail the build on
+error. Original pixels and geometry are unchanged. No Midnight credentials are
+required. Only the live city feed and public conversations use Midnight at runtime.
+
+Artwork refreshes on deployment only, not on a daily schedule or page load.
+New custom sprites/buildings appearing after deployment need another deployment
+before their artwork is available. Local downloads are cached with ETags under
+`.cache/artwork/`, while clean CI builds download their own complete snapshot.
+The client also validates GLB lengths and chunks before parsing, retries interrupted
+downloads twice, and offers **Retry loading** after terminal failure without
+reloading the live feed. Static assets use Cloudflare's compression; local Node
+previews keep their precompressed JavaScript/CSS alternatives.
 
 ## Controls
 
@@ -101,14 +117,24 @@ text, never injected HTML. Snapshot data is not committed to this repository.
   Upstream asset removal or incompatible map changes can require an update.
 - Desktop-first mouse/keyboard controls; no mobile walking controls yet.
 - Public source/model access is not a license. Redistribution/public hosting
-  permission has not been established. Assets are fetched on demand through a
-  read-only adapter; original downloaded source and models are not committed.
+  permission has not been established. Downloaded artwork is now hosted as static
+  files; original downloaded source and artwork are not committed to Git.
   Deployment does not establish redistribution rights for third-party material.
 - Public spectator endpoints are observed contracts and can change upstream.
 
 See [integration findings](docs/integration.md) for verified routes and sources.
 
 ## Verification
+
+Checked locally on 2026-10-04:
+
+- All 357 static artwork files (246 GLBs, 110 PNGs, one HDR; 197 MiB) match
+  their downloaded originals by byte count and SHA-256 through Wrangler.
+- Chrome renders Central and Charging House from the static snapshot.
+- Deliberately truncated model responses trigger bounded retries and a stable
+  failure message; **Retry loading** restores the complete scene.
+- Targeted model integrity, cancellation, stale scene completion, and terminal
+  loading-state checks pass, along with type checking and the production build.
 
 Checked locally on 2026-10-03:
 
@@ -149,8 +175,8 @@ Checked locally on 2026-10-03:
   world connection and renderer.
 - `src/native-scene.ts` adapts the native renderer to the independent visitor UI.
   `scripts/sync-native.mjs` isolates it without executing the original app entry,
-  account controls, or agent-action APIs. `native-assets.mjs` serves only reviewed
-  public artwork paths with method, size and file-signature checks.
+  account controls, or agent-action APIs. `scripts/sync-artwork.mjs` downloads
+  reviewed artwork at build time; no deployed code proxies asset requests.
 - The earlier custom renderer remains in the repository but is not imported by
   the active client.
 

@@ -196,7 +196,7 @@ function App() {
 
     <footer className="pointer-events-none absolute inset-x-0 bottom-5 z-10 flex flex-col items-center gap-2 px-4 text-center">
       {(error || status !== 'live') && <p role="status" className="panel max-w-md px-4 py-2 text-xs text-amber-200">{error || connectionMessage}{world && status !== 'live' ? ' Displaying the last received state.' : ''}</p>}
-      {(assets.loading > 0 || assets.failed > 0) && <p className="panel px-3 py-1.5 text-xs text-slate-400">{assets.loading > 0 ? `Loading ${assets.loading} city models…` : `${assets.failed} city models unavailable · map geometry remains active`}</p>}
+      {(assets.loading > 0 || assets.failed > 0) && <div className="panel px-3 py-1.5 text-xs text-slate-400">{assets.loading > 0 ? 'Loading city models…' : <><span>City models could not load.</span><Button className="pointer-events-auto ml-3 text-lime-300" onClick={() => engine.current?.retry()}>Retry loading</Button></>}</div>}
       <div className="panel px-4 py-2 text-xs text-slate-400"><span className="text-slate-200">WASD</span> move <span className="mx-2 text-slate-600">/</span><span className="text-slate-200">Shift</span> run <span className="mx-2 text-slate-600">/</span><span className="text-slate-200">E</span> meet / enter <span className="mx-2 text-slate-600">/</span><span className="text-slate-200">Esc</span> release</div>
     </footer>
 

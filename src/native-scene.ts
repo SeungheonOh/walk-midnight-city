@@ -53,7 +53,7 @@ export class CityScene {
       if (status.loading) { this.preparation?.abort(); this.surface = undefined; }
       this.loading = status.loading;
       callbacks.assets(Number(status.loading), Number(!!status.error));
-      if (status.error) callbacks.error(status.error);
+      callbacks.error(status.error ?? '');
     }, () => {}, () => {}, {
       load: <Result>(operation: () => Promise<Result>) => this.assetQueue.run(operation),
       ready: async (camera: PerspectiveCamera, layout: NativeLayout, controls: NativeControls, key: string | null) => {
@@ -112,6 +112,8 @@ export class CityScene {
     this.callbacks.position(this.position, this.yaw); this.callbacks.focus(null);
     void this.native.setWorld({ ...this.world, agentSeeds: this.world.agentSeeds ?? {} }, space.id);
   }
+
+  retry() { if (!this.disposed && !this.loading) void this.native.retry(); }
 
   lock() {
     if (!this.space || this.loading || !this.surface) return;
