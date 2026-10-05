@@ -168,6 +168,13 @@ Checked locally on 2026-10-03:
 
 ## Movement and rendering
 
+- Fresh public `agent_spoke` events appear briefly above the speaking resident,
+  labeled with the recipient. Bubbles follow the interpolated sprite, expire
+  after 12–25 seconds depending on message length, and do not replay old events.
+  At most six nearby, visible, non-overlapping bubbles appear; walls, distance,
+  room changes, and the camera view hide them. Long lines are visually clamped
+  with the full text available to accessibility tools and the conversation panel.
+  This uses the existing live feed, with no extra polling or generated dialogue.
 - Resident sprites replay timestamped samples with a 1.5-tick buffer
   (normally 750 ms). This absorbs network jitter without inventing future moves.
   Turns preserve the received tile path; teleports snap rather than crossing the

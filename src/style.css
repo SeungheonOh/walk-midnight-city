@@ -14,6 +14,11 @@ kbd { border: 1px solid var(--color-slate-600); border-radius: var(--radius-sm);
   .icon-button { @apply flex size-11 items-center justify-center rounded-xl border border-slate-700/70 bg-slate-950/95 text-slate-300 shadow-sm hover:bg-slate-800; }
   .primary-button { @apply flex items-center justify-center gap-2 rounded-lg bg-lime-300 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-lime-200; }
   .secondary-button { @apply flex items-center justify-center gap-2 rounded-lg border border-slate-700 px-3 py-2.5 text-xs text-slate-200 hover:bg-slate-800; }
+  .speech-layer { @apply pointer-events-none absolute inset-0 z-10 overflow-hidden; }
+  .speech-bubble { @apply absolute left-0 top-0 w-72 max-w-[calc(100%-2rem)] rounded-xl border border-slate-600 bg-slate-950/95 p-3 shadow-lg; }
+  .speech-bubble::after { content: ''; left: var(--speech-tail); @apply absolute -bottom-1.5 size-3 -translate-x-1/2 rotate-45 border-b border-r border-slate-600 bg-slate-950; }
+  .speech-speaker { @apply mb-1 truncate text-xs font-medium text-lime-300; }
+  .speech-message { @apply line-clamp-4 text-pretty text-sm leading-5 break-words text-slate-100; }
 }
 header { padding-top: max(1rem, env(safe-area-inset-top)); }
 footer { padding-bottom: env(safe-area-inset-bottom); }

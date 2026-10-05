@@ -8,6 +8,7 @@ import { prepareFirstPersonMaterials } from './first-person-materials';
 import type { FocusTarget, SceneCallbacks } from './scene';
 import { AssetQueue, modelLoadConcurrency } from './asset-queue';
 import { partitionStaticInstances } from './static-batches';
+import { SpeechBubbles } from './speech-bubbles';
 
 interface NativeLayout {
   heightAt: (horizontal: number, depth: number) => number;
@@ -49,11 +50,13 @@ export class CityScene {
   private loading = true;
   private assetQueue = new AssetQueue(modelLoadConcurrency(navigator));
   private diagnostics = new URLSearchParams(location.search).has('diagnostics');
+  private speech: SpeechBubbles;
 
   constructor(container: HTMLElement, private callbacks: SceneCallbacks) {
+    this.speech = new SpeechBubbles(container);
     this.native = createNativeScene(container, () => {}, status => {
       if (this.disposed) return;
-      if (status.loading) { this.preparation?.abort(); this.surface = undefined; }
+      if (status.loading) { this.preparation?.abort(); this.surface = undefined; this.speech.hide(); }
       this.loading = status.loading;
       callbacks.assets(Number(status.loading), Number(!!status.error));
       callbacks.error(status.error ?? '');
@@ -85,7 +88,10 @@ export class CityScene {
       },
       frame: this.frame,
       active: () => !this.loading && !!this.surface,
-      rendered: () => { if (this.diagnostics && this.renderStarted) this.renderTimes.push(performance.now() - this.renderStarted); },
+      rendered: () => {
+        if (this.camera && this.space && this.residents) this.speech.render(this.camera, this.space.id, id => this.residents?.position(id), (horizontal, height, depth) => this.visible(horizontal, height, depth));
+        if (this.diagnostics && this.renderStarted) this.renderTimes.push(performance.now() - this.renderStarted);
+      },
       time: (time: number) => this.playback.read(time),
     });
     this.canvas = container.querySelector('canvas')!;
@@ -103,6 +109,7 @@ export class CityScene {
 
   update(world: WorldState) {
     this.world = world;
+    this.speech.update(world);
     this.playback.observe(world.dynamicWorld.timestamp, performance.now(), world.dynamicWorld.tickRateMs);
     if (this.space) void this.native.setWorld({ ...world, agentSeeds: world.agentSeeds ?? {} }, this.space.id);
   }
@@ -117,7 +124,7 @@ export class CityScene {
     const destination = requested ?? plaza?.anchor ?? space.entry;
     this.position = { spaceId, x: destination.x + (requested ? 0 : 0.5), y: destination.y + (requested ? 0 : 0.5) };
     this.yaw = 0; this.pitch = 0; this.clearKeys(); this.target = null;
-    if (changed) { this.preparation?.abort(); this.layout = undefined; this.surface = undefined; }
+    if (changed) { this.preparation?.abort(); this.layout = undefined; this.surface = undefined; this.speech.hide(); }
     else if (this.surface) this.position = this.surface.nearest(this.position);
     this.placeCamera();
     this.callbacks.position(this.position, this.yaw); this.callbacks.focus(null);
@@ -241,7 +248,7 @@ export class CityScene {
   }
 
   dispose() {
-    this.disposed = true; this.preparation?.abort(); this.walkingCache.clear(); this.unlock(); this.native.dispose();
+    this.disposed = true; this.preparation?.abort(); this.walkingCache.clear(); this.unlock(); this.native.dispose(); this.speech.dispose();
     document.removeEventListener('pointerlockchange', this.onLockChange);
     document.removeEventListener('pointerlockerror', this.onLockError);
     document.removeEventListener('mousemove', this.onMouse);
